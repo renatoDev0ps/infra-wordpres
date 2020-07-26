@@ -1,0 +1,87 @@
+version: '3'
+services:
+#nginx
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    restart: unless-stopped
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - certs:/etc/nginx/certs:ro
+      - vhostd:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./config/nginx/client_max_body_size.conf:/etc/nginx/conf.d/client_max_body_size.conf:ro
+#letsencrypt
+  letsencrypt-nginx-proxy-companion:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt-nginx-proxy-companion
+    environment:
+      - NGINX_PROXY_CONTAINER=nginx-proxy
+    volumes:
+      - certs:/etc/nginx/certs
+      - vhostd:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+#database
+  db_wp:
+    image: mysql:5.7
+    container_name: db_wp
+    volumes:
+      - ./config/mysql/my.cnf:/etc/mysql/my.cnf
+      - db_data:/var/lib/mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: IRoh8IAsUgeuUfSD
+#phpmyadmin
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    restart: unless-stopped
+    links:
+      - db_wp
+    ports:
+      - 8082:80
+    environment:
+      - PMA_HOST=db_wp
+      - PMA_PORT=3306
+      - PMA_USER=root
+      - PMA_PASSWORD=IRoh8IAsUgeuUfSD
+      - PHP_UPLOAD_MAX_FILESIZE=100MB
+#wordpress g20businness.com
+  wp_g20businness:
+    depends_on:
+      - db_wp
+    container_name: wp_g20businness
+    image: wordpress:latest
+    expose:
+      - 80
+      - 443
+    restart: unless-stopped
+    volumes:
+      #- ./bkp/g20businness.com/:/var/www/html
+      - ./config/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+    environment:
+      VIRTUAL_HOST: g20businness.com
+      WORDPRESS_DB_NAME: wordpress_g20businness
+      WORDPRESS_DB_HOST: db_wp:3306
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: IRoh8IAsUgeuUfSD
+      LETSENCRYPT_HOST: g20businness.com
+      LETSENCRYPT_EMAIL: contact@g20businness.com
+
+volumes:
+  db_data: {}
+  certs:
+  html:
+  vhostd:
+
+networks:
+  default:
+    external:
+      name: nginx-proxy

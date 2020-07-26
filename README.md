@@ -1,0 +1,1 @@
+Configurações para os Dockers das Aplicações.

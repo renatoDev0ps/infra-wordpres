@@ -1,0 +1,41 @@
+version: '3.3'
+services:
+  wordpress:
+    container_name: wordpress
+    image: wordpress
+    depends_on:
+      - db
+    ports:
+      - 8080:80
+    volumes:
+      - ./themes:/var/www/html/wp-content/themes/theme_youxchange
+      - ./plugins:/var/www/html/wp-content/plugins
+      - ./uploads:/var/www/html/wp-content/uploads
+    environment: 
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_NAME: wordpress
+  db:
+    container_name: database_wp
+    image: mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: examplepass
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+  phpmyadmin:
+    container_name: phpmyadmin_wp
+    image: corbinu/docker-phpmyadmin
+    depends_on:
+      - db
+    ports:
+      - 8081:80
+    environment:
+      MYSQL_USERNAME: root
+      MYSQL_ROOT_PASSWORD: examplepass
+
+volumes:
+  db_data: {}
